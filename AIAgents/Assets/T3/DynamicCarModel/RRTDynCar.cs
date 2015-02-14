@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class RRTKinCar : MonoBehaviour {
-
+public class RRTDynCar : MonoBehaviour {
 	public Dubin dubin;
+	PolyMapLoader map;
 
 	public float xLow;
 	public float xHigh;
@@ -14,18 +14,16 @@ public class RRTKinCar : MonoBehaviour {
 	public float goalInterval;
 	public int nrIterations;
 	public float nearRadius;
-	
-	public float carLength = 4f;
-	public float maxWheelAngle = 87f;
-	public float vel = 1;
-	float minRadius = 0f;
-	
+
 	List<Vector3> path = null;
 	List<RRTKinCarNode> points;
 
-	private PolyMapLoader map;
+	public float carLength;
+	public float maxWheelAngle;
+	public float dynF;
+	public float dynMass;
 
-	bool isRunning = false;
+	float minRadius;
 
 	void Start() {
 		minRadius = Mathf.Abs (carLength / (Mathf.Tan (maxWheelAngle) ));
@@ -41,20 +39,25 @@ public class RRTKinCar : MonoBehaviour {
 
 		print ("#Points: " + points.Count);
 
-//		path = new List<Vector3> ();
-//		path.Add (transform.position);
-//		path.Add (new Vector3 (5, 1, 46));
-//		path.Add (new Vector3 (5, 1, 6));
-//		path.Add (new Vector3 (87, 1, 6));
-//		path.Add (new Vector3 (80, 1, 30));
 
+
+		/*
+		path = new List<Vector3> ();
+		path.Add (transform.position);
+		path.Add (new Vector3 (67, 1, 89));
+		//path.Add (transform.position + Vector3.right);
+		path.Add (new Vector3 (2, 1, 46));
+		path.Add (new Vector3 (5, 1, 6));
+		path.Add (new Vector3 (87, 1, 6));
+		path.Add (new Vector3 (80, 1, 30));
+*/
 		if (path != null) {
 			StartCoroutine("Move");
 		}
 	}
 
-
-
+	
+	
 	public void doRRT(int nrIterations, Vector3 endPoint){
 		
 		for (int i=0; i<nrIterations; i++) {
@@ -126,23 +129,28 @@ public class RRTKinCar : MonoBehaviour {
 		
 	}
 
+	int run = 0;
 	private RRTKinCarSteerRet steer(Vector3 start,Vector3 end, Quaternion startRot, Quaternion endRot){
 		float r1 = minRadius, r2 = minRadius;
 		DubinRet S = dubin.MinTrajectory (start, end, startRot, endRot, r1, r2);
-
-		if (S == null)
+		run++;
+		if (S == null) {
+			print (run + ": " + " S IS NULL ");
 			return null;
-
-		dS = new Line (S.waypoints [0], S.waypoints [1]);
-
+		}
+		
 		List<Vector3> path = new List<Vector3> ();
-		path.Add (start);
+		//path.Add (start);
 		path.Add (end);
 
+		float velX = 0;
+		float velY = 0;
+		float dynVel = 0;
+		
 		Vector3 curPos = start;
 		Vector3 goalPos = end;
 		Quaternion curRot = startRot;
-
+		
 		bool followS = true;
 		int q = 2;
 		bool carMadeIt = false;
@@ -153,12 +161,12 @@ public class RRTKinCar : MonoBehaviour {
 			if(carMadeIt) {
 				if(Vector3.Distance (curPos, path[index]) < goalInterval) {
 					index++;
-
+					
 					if(index >= path.Count){
 						return new RRTKinCarSteerRet(S.cost, curRot);
 						//return new RRTKinCarSteerRet(nrSteps, curRot);
 					}
-
+					
 					followS = true;
 					current = path[index];
 				}
@@ -182,28 +190,40 @@ public class RRTKinCar : MonoBehaviour {
 				}
 			}
 
-			float wheelAngleRad = maxWheelAngle * (Mathf.PI / 180);
-			float dTheta = (vel / carLength) * Mathf.Tan (wheelAngleRad);
-			Quaternion theta = Quaternion.LookRotation(current - curPos);
-
-			if(curRot != theta) {
-				curRot = Quaternion.RotateTowards(curRot, theta, dTheta);
+			float distToTarget = Vector3.Distance (current, curPos);
+			float neededDistToStop = (Mathf.Pow (dynVel, 2) / 2 * (dynF / dynMass));
+			
+			if(distToTarget > neededDistToStop) {
+				dynVel = dynVel + (dynF / dynMass);
+			}
+			else {
+				dynVel = dynVel - (dynF / dynMass);
 			}
 
+			if(dynVel < 0)
+				dynVel = 0;
+			
+			float wheelAngleRad = maxWheelAngle * (Mathf.PI / 180);
+			float dTheta=(dynVel/carLength)*Mathf.Tan(wheelAngleRad);
+			Quaternion theta = Quaternion.LookRotation (current - curPos);
+			
+			if(transform.rotation!=theta){
+				curRot = Quaternion.RotateTowards (curRot, theta, dTheta);
+			}
+			
 			Vector3 curDir = curRot.eulerAngles;
 			Vector3 newPos = curPos;
-			float angleRad = curDir.y * (Mathf.PI / 180);
-			newPos.x = newPos.x + (vel * Mathf.Sin (angleRad) * Time.deltaTime);
-			newPos.z = newPos.z + (vel * Mathf.Cos (angleRad) * Time.deltaTime);
+			float angleRad = curDir.y*(Mathf.PI/180);
+			newPos.x = newPos.x + (dynVel*Mathf.Sin(angleRad)*Time.deltaTime);
+			newPos.z = newPos.z + (dynVel*Mathf.Cos(angleRad)*Time.deltaTime);
+
+			if(Vector3.Distance (current, newPos) < goalInterval){
+				carMadeIt = true;
+			}
 
 			if(!checkIntersection (curPos, newPos) && curPos != newPos) {
 				return null;
 			}
-				
-			if(Vector3.Distance (current, curPos) < goalInterval) {
-				carMadeIt = true;
-			}
-
 
 			curPos = newPos;
 			nrSteps++;
@@ -231,7 +251,7 @@ public class RRTKinCar : MonoBehaviour {
 		return curRand;
 		
 	}
-
+	
 	private RRTKinCarNode closestPoint(Vector3 newPoint){
 		
 		float curLowest = float.PositiveInfinity;
@@ -264,7 +284,7 @@ public class RRTKinCar : MonoBehaviour {
 		return nearNodes;
 		
 	}
-
+	
 	private bool checkIntersection(Vector3 start, Vector3 end){
 		
 		Line newLine = new Line (start, end);
@@ -284,21 +304,21 @@ public class RRTKinCar : MonoBehaviour {
 	private List<Vector3> findPath(Vector3 endPoint){
 		
 		RRTKinCarNode goalNode = null;
-		List<Vector3> path=new List<Vector3>();
+		List<Vector3> path = new List<Vector3> ();
 		
 		foreach (RRTKinCarNode node in points) {
 			
-			float distToGoal=Vector3.Distance(node.position,endPoint);
+			float distToGoal = Vector3.Distance (node.position, endPoint);
 			
 			//If there is a point close to the goal
-			if(distToGoal<goalInterval){
-				goalNode=node;
-				Debug.Log("Path cost:"+goalNode.getCost());
+			if (distToGoal < goalInterval) {
+				goalNode = node;
+				Debug.Log ("Path cost:" + goalNode.getCost ());
 				break;
 			}
 		}
 		//If no goal node was found
-		if(goalNode==null){
+		if (goalNode == null) {
 			return null;
 		}
 		
@@ -306,8 +326,8 @@ public class RRTKinCar : MonoBehaviour {
 		
 		while (curNode.parent!=null) {
 			
-			path.Add(curNode.position);
-			curNode=curNode.parent;
+			path.Add (curNode.position);
+			curNode = curNode.parent;
 			
 		}
 		
@@ -315,107 +335,50 @@ public class RRTKinCar : MonoBehaviour {
 		path.Add (curNode.position);
 		
 		//Reverse the path
-		path.Reverse();
+		path.Reverse ();
 		
 		return path;
-		
 	}
 
-	void OnDrawGizmos() {
-        
-		if (moving) {
-			Gizmos.color = Color.black;
-			if (dubin.proxCircles != null) {
-				foreach (Circle circle in dubin.proxCircles) {
-					Gizmos.DrawWireSphere (circle.pos, minRadius);
-				}
-			}
-        
-			Gizmos.color = Color.white;
-			if (path != null) {
-				foreach (Vector3 pos in path) {
-					Gizmos.DrawCube (pos, Vector3.one);
-				}
-			}
-        
-			Gizmos.color = Color.green;
-			if (dS != null) {
-				Gizmos.DrawLine (dS.point1, dS.point2);
-			}
-		}
-        
-        /*
-		Gizmos.color = Color.blue;
-		if (dubin.tangents != null) {
-			foreach(Line line in dubin.tangents) {
-				Gizmos.DrawLine (line.point1, line.point2);
-			}
-		}
-
-
-
-		
-		Gizmos.color = Color.blue;
-		if (dubin.tangents != null) {
-			foreach (Line line in dubin.tangents) {
-				Gizmos.DrawLine (line.point1, line.point2);
-			}
-		}
-		
-		Gizmos.color = Color.green;
-		if(dS != null) {
-			Gizmos.DrawLine (dS.point1, dS.point2);
-		}
-		
-		Gizmos.color = Color.red;
-		for(int i = index; i < path.Count; i++) {
-			Gizmos.DrawCube (path[i], Vector3.one * 0.2f);
-		}
-		
-		Gizmos.color = Color.magenta;
-		if(current != Vector3.zero){
-			Gizmos.DrawCube (current, Vector3.one * 0.5f);
-		}
-		*/
-    }
 
 	int index = 1;
 	Vector3 current = Vector3.zero;
-	Line dS = null;
+	Line ds = null;
 	bool moving = false;
 	IEnumerator Move() {
 		moving = true;
+		float velX = 0;
+		float velY = 0;
+		float dynVel = 0;
+		moving = true;
 		current = path [index];
-		
-		DubinRet S = dubin.MinTrajectory (transform.position, current, transform.rotation, 
-		                                       transform.rotation, minRadius, minRadius);
-		
-		dS = new Line(S.waypoints[0], S.waypoints[1]);
-		
+
+		DubinRet S = dubin.MinTrajectory (transform.position, current, transform.rotation, transform.rotation,
+		                               minRadius, minRadius);
+		ds = new Line (S.waypoints [0], S.waypoints [1]);
+
 		bool followS = true;
 		int q = 2;
 		bool carMadeIt = false;
 		while (true) {
 			if(carMadeIt) {
-				if(Vector3.Distance (transform.position, path[index]) < goalInterval){
+				if(Vector3.Distance (transform.position, path[index]) < goalInterval) {
 					index++;
-					
-					if(index >= path.Count)
+
+					if(index >= path.Count) {
+						moving = false;
 						yield break;
-					
+					}
+
 					followS = true;
-					
 					current = path[index];
-					S = dubin.MinTrajectory (transform.position, current, transform.rotation, 
-					                         transform.rotation, minRadius, minRadius);
-					dS = new Line(S.waypoints[0], S.waypoints[1]);	
+					S = dubin.MinTrajectory(transform.position, current, transform.rotation,
+					                        transform.rotation, minRadius, minRadius);
+					ds = new Line(S.waypoints[0], S.waypoints[1]);
 					q = 2;
 				}
-				
 			}
-			
 			if(followS) {
-				
 				if(q == 2){
 					current = S.waypoints[0];
 					if(Vector3.Distance (transform.position, current) < goalInterval)
@@ -430,11 +393,25 @@ public class RRTKinCar : MonoBehaviour {
 					current = path[index];
 				}
 			}
-			
-			float wheelAngleRad=maxWheelAngle*(Mathf.PI/180);
-			float dTheta=(vel/carLength)*Mathf.Tan(wheelAngleRad);
+
+			float distToTarget = Vector3.Distance (current, transform.position);
+			float neededDistToStop = (Mathf.Pow (dynVel, 2) / 2 * (dynF / dynMass));
+
+			print (dynVel);
+			if(distToTarget > neededDistToStop) {
+				dynVel = dynVel + (dynF / dynMass);
+			}
+			else{
+				dynVel = dynVel - (dynF / dynMass);
+			}
+
+			if(dynVel < 0)
+				dynVel = 0;
+
+			float wheelAngleRad = maxWheelAngle * (Mathf.PI / 180);
+			float dTheta=(dynVel/carLength)*Mathf.Tan(wheelAngleRad);
 			Quaternion theta = Quaternion.LookRotation (current - transform.position);
-			
+
 			if(transform.rotation!=theta){
 				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, dTheta);
 			}
@@ -442,15 +419,40 @@ public class RRTKinCar : MonoBehaviour {
 			Vector3 curDir=transform.eulerAngles;
 			Vector3 newPos=transform.position;
 			float angleRad=curDir.y*(Mathf.PI/180);
-			newPos.x=newPos.x+(vel*Mathf.Sin(angleRad)*Time.deltaTime);
-			newPos.z=newPos.z+(vel*Mathf.Cos(angleRad)*Time.deltaTime);
+			newPos.x=newPos.x+(dynVel*Mathf.Sin(angleRad)*Time.deltaTime);
+			newPos.z=newPos.z+(dynVel*Mathf.Cos(angleRad)*Time.deltaTime);
 			transform.position=newPos;
-			
-			if(Vector3.Distance (current, transform.position) < goalInterval)
+
+			//If the car is "almost" at the point
+			if(Vector3.Distance (current, transform.position) < goalInterval){
 				carMadeIt = true;
-			
+			}
+
 			yield return null;
 		}
 	}
 
+	void OnDrawGizmos() {
+		if (moving) {
+			Gizmos.color = Color.black;
+			if (dubin.proxCircles != null) {
+				foreach (Circle circle in dubin.proxCircles) {
+					Gizmos.DrawWireSphere (circle.pos, minRadius);
+				}
+			}
+			
+			Gizmos.color = Color.white;
+			if (path != null) {
+				foreach (Vector3 pos in path) {
+					Gizmos.DrawCube (pos, Vector3.one);
+				}
+            }
+            
+            Gizmos.color = Color.green;
+            if (ds != null) {
+                Gizmos.DrawLine (ds.point1, ds.point2);
+            }
+        }
+        
+    }
 }
