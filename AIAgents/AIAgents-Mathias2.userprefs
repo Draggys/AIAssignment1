@@ -1,0 +1,14 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\T3\KinematicCarModel\RRTKinCar.cs">
+    <Files>
+      <File FileName="Assets\T3\KinematicCarModel\RRTKinCar.cs" Line="333" Column="29" />
+      <File FileName="Assets\Dubin\DubinWaypoint.cs" Line="95" Column="28" />
+      <File FileName="Assets\Dubin\Dubin.cs" Line="72" Column="64" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>
