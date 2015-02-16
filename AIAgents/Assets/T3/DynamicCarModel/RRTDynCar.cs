@@ -15,6 +15,8 @@ public class RRTDynCar : MonoBehaviour {
 	public int nrIterations;
 	public float nearRadius;
 
+	
+	List<Vector3> oldPath = null;
 	List<Vector3> path = null;
 	List<RRTKinCarNode> points;
 
@@ -52,6 +54,21 @@ public class RRTDynCar : MonoBehaviour {
 		path.Add (new Vector3 (80, 1, 30));
 */
 		if (path != null) {
+			List<Vector3> newPath = new List<Vector3> ();
+			for(int i = 0; i < path.Count; i++) {
+				newPath.Add (path[i]);
+				if(checkIntersection (path[i], path[path.Count - 1])) {
+					// not intersection
+					newPath.Add (path[path.Count - 1]);
+					break;
+				}
+			}
+
+			print ("Old path: " + path.Count);
+			print ("New path: " + newPath.Count);
+			
+			oldPath = path;
+			path = newPath;
 			StartCoroutine("Move");
 		}
 	}
@@ -440,13 +457,20 @@ public class RRTDynCar : MonoBehaviour {
 					Gizmos.DrawWireSphere (circle.pos, minRadius);
 				}
 			}
-			
+
+			Gizmos.color = Color.magenta;
+			if (oldPath != null) {
+				foreach (Vector3 pos in oldPath) {
+					Gizmos.DrawCube (pos, Vector3.one * 2);
+				}
+			}
+
 			Gizmos.color = Color.white;
 			if (path != null) {
 				foreach (Vector3 pos in path) {
 					Gizmos.DrawCube (pos, Vector3.one);
 				}
-            }
+			}		
             
             Gizmos.color = Color.green;
             if (ds != null) {

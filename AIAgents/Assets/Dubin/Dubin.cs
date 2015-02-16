@@ -61,15 +61,15 @@ public class Dubin : MonoBehaviour {
 		CSC csc = CSCMinTrajectoryInner(start, goal, startAngle, goalAngle, r1, r2);
 		CCC ccc= CCCMinTrajectory (start, goal, startAngle, goalAngle, r1, r2);
 
-		print ("csc cost " + csc.cost);
-		print ("ccc cost " + ccc.cost);
+	//	print ("csc cost " + csc.cost);
+	//	print ("ccc cost " + ccc.cost);
 
 		if (float.IsNaN (ccc.cost) || csc.cost < ccc.cost) {
-			print ("CSC");
+	//		print ("CSC");
 			return new DubinRet(csc.tangent.point1, csc.tangent.point2, csc.cost);
 		} 
 		else {
-			print ("CCC");
+	//		print ("CCC");
 			return new DubinRet(ccc.arcPos[0], ccc.arcPos[1], ccc.cost);
 		}
 
