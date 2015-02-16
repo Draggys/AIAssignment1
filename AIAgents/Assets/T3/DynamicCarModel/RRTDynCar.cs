@@ -53,6 +53,7 @@ public class RRTDynCar : MonoBehaviour {
 		path.Add (new Vector3 (87, 1, 6));
 		path.Add (new Vector3 (80, 1, 30));
 */
+		/*
 		if (path != null) {
 			List<Vector3> newPath = new List<Vector3> ();
 			for(int i = 0; i < path.Count; i++) {
@@ -69,6 +70,25 @@ public class RRTDynCar : MonoBehaviour {
 			
 			oldPath = path;
 			path = newPath;
+			StartCoroutine("Move");
+		}
+*/
+		if (path != null) {
+			List<Vector3> newPath = new List<Vector3> ();
+			int i = 1;
+			newPath.Add (path[0]);
+			while(i < path.Count) {
+				if(!checkIntersection (newPath[newPath.Count - 1], path[i])) {
+					// intersection
+					newPath.Add (path[i - 1]);
+				}
+				i++;
+			}
+			newPath.Add (path[path.Count - 1]);
+
+			oldPath = path;
+			path = newPath;
+
 			StartCoroutine("Move");
 		}
 	}
