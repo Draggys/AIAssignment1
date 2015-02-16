@@ -49,7 +49,7 @@ public class RRTKinCar : MonoBehaviour {
 //		path.Add (new Vector3 (87, 1, 6));
 //		path.Add (new Vector3 (80, 1, 30));
 
-		/*
+
 		if (path != null) {
 			List<Vector3> newPath = new List<Vector3> ();
 			for(int i = 0; i < path.Count; i++) {
@@ -68,13 +68,17 @@ public class RRTKinCar : MonoBehaviour {
 			path = newPath;
 			StartCoroutine("Move");
 		}
-		*/
 
+
+		/*
+		// OBS 
+		// This won't work. We need to steer again and not use lines.
 		if (path != null) {
 			List<Vector3> newPath = new List<Vector3> ();
 			int i = 1;
 			newPath.Add (path[0]);
 			while(i < path.Count) {
+				// This won't work. We need to steer again and not use lines.
 				if(!checkIntersection (newPath[newPath.Count - 1], path[i])) {
 					// intersection
 					newPath.Add (path[i - 1]);
@@ -82,12 +86,13 @@ public class RRTKinCar : MonoBehaviour {
 				i++;
 			}
 			newPath.Add (path[path.Count - 1]);
-			
+
 			oldPath = path;
 			path = newPath;
-			
+
 			StartCoroutine("Move");
 		}
+		*/
 	}
 
 
