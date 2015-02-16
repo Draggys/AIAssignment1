@@ -61,14 +61,15 @@ public class Dubin : MonoBehaviour {
 		CSC csc = CSCMinTrajectoryInner(start, goal, startAngle, goalAngle, r1, r2);
 		CCC ccc= CCCMinTrajectory (start, goal, startAngle, goalAngle, r1, r2);
 
-	//	print ("csc cost " + csc.cost);
-	//	print ("ccc cost " + ccc.cost);
+		print ("csc cost " + csc.cost);
+		print ("ccc cost " + ccc.cost);
 
 		if (float.IsNaN (ccc.cost) || csc.cost < ccc.cost) {
+			print ("CSC");
 			return new DubinRet(csc.tangent.point1, csc.tangent.point2, csc.cost);
 		} 
 		else {
-	//		print ("CCC");
+			print ("CCC");
 			return new DubinRet(ccc.arcPos[0], ccc.arcPos[1], ccc.cost);
 		}
 
@@ -98,6 +99,9 @@ public class Dubin : MonoBehaviour {
 		else
 			rMin = r2;
 
+		
+		Circle[] centers = GetProximityCircles (start, goal, startAngle, goalAngle, r1, r2);
+
 		Vector3 p1 = start;
 		Vector3 p2 = goal;
 		float p1p3 = 2 * rMin;
@@ -117,7 +121,8 @@ public class Dubin : MonoBehaviour {
 		Vector3 pt2 = p3 + V2;
 
 		CCC ccc = new CCC (pt1, pt2);
-		ccc.cost += ArcLength (p1, start, pt1, "L", r1);
+		//ccc.cost += ArcLength (p1, start, pt1, "L", r1);
+		ccc.cost += ArcLength (centers[0].pos, start, pt1, "L", r1);
 		ccc.cost += ArcLength (p3, pt1, pt2, "R", r1);
 		ccc.cost += ArcLength (p2, pt2, goal, "L", r1);
 		CCC.Add (ccc);
@@ -132,7 +137,8 @@ public class Dubin : MonoBehaviour {
 		pt2 = p3 + V2;
 
 		ccc = new CCC (pt1, pt2);
-		ccc.cost += ArcLength (p1, start, pt1, "R", r1);
+		ccc.cost += ArcLength (centers[1].pos, start, pt1, "L", r1);
+		//ccc.cost += ArcLength (p1, start, pt1, "R", r1);
 		ccc.cost += ArcLength (p3, pt1, pt2, "L", r1);
 		ccc.cost += ArcLength (p2, pt2, goal, "R", r1);
 		CCC.Add (ccc);
