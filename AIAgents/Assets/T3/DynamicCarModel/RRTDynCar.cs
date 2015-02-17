@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -18,12 +18,13 @@ public class RRTDynCar : MonoBehaviour {
 	
 	List<Vector3> oldPath = null;
 	List<Vector3> path = null;
-	List<RRTKinCarNode> points;
+	List<RRTDynCarNode> points;
 
 	public float carLength;
 	public float maxWheelAngle;
 	public float dynF;
 	public float dynMass;
+	public float accMax;
 
 	float minRadius;
 
@@ -32,8 +33,8 @@ public class RRTDynCar : MonoBehaviour {
 		dubin = gameObject.AddComponent<Dubin> ();
 		
 		map = new PolyMapLoader ("x", "y", "goalPos", "startPos", "button");
-		points = new List<RRTKinCarNode> ();
-		RRTKinCarNode startNode = new RRTKinCarNode (map.polyData.start);
+		points = new List<RRTDynCarNode> ();
+		RRTDynCarNode startNode = new RRTDynCarNode (map.polyData.start);
 		startNode.direction = transform.rotation;
 		points.Add (startNode);
 
@@ -108,25 +109,25 @@ public class RRTDynCar : MonoBehaviour {
 			
 			Vector3 curRand=this.sampleFree();
 			
-			RRTKinCarNode nearest=this.closestPoint(curRand);
+			RRTDynCarNode nearest=this.closestPoint(curRand);
 			
 			//If obstacle free path
-			RRTKinCarSteerRet steerRet=this.steer(nearest.position,curRand,nearest.getDirection(), nearest.getDirection ()); //endrot?
+			RRTDynCarSteerRet steerRet=this.steer(nearest.position,curRand,nearest.getDirection(), nearest.getDirection (),nearest.getDynVel()); //endrot?
 			
 			if(steerRet!=null){
 				
-				RRTKinCarNode newNode=new RRTKinCarNode(curRand);
+				RRTDynCarNode newNode=new RRTDynCarNode(curRand);
 				
-				List<RRTKinCarNode> nearNodes=this.getNearPoints(newNode);
+				List<RRTDynCarNode> nearNodes=this.getNearPoints(newNode);
 				
-				RRTKinCarNode xmin=nearest;
+				RRTDynCarNode xmin=nearest;
 				float cmin=nearest.getCost()+steerRet.getSteps();
 				Quaternion newRot=steerRet.getRot();
 				
 				//Check is path with less cost exists to new node
-				foreach(RRTKinCarNode near in nearNodes){
+				foreach(RRTDynCarNode near in nearNodes){
 					//If collision free && lesser cost
-					RRTKinCarSteerRet ret=this.steer(near.position,curRand,near.getDirection(), near.getDirection ()); //randomize end pos?
+					RRTDynCarSteerRet ret=this.steer(near.position,curRand,near.getDirection(), near.getDirection (), near.getDynVel()); //randomize end pos?
 					if(ret!=null){
 						float thisCost=near.getCost()+ret.getSteps();
 						if(thisCost<cmin){
@@ -142,9 +143,9 @@ public class RRTDynCar : MonoBehaviour {
 				points.Add(newNode);
 				
 				//Check if any of near points can be rewired
-				foreach(RRTKinCarNode near in nearNodes){
+				foreach(RRTDynCarNode near in nearNodes){
 					
-					RRTKinCarSteerRet ret=this.steer(newNode.position,near.position,newNode.getDirection(), newNode.getDirection ()); //endRot?
+					RRTDynCarSteerRet ret=this.steer(newNode.position,near.position,newNode.getDirection(), newNode.getDirection (), newNode.getDynVel()); //endRot?
 					
 					if(ret!=null){
 						float costThroughNew=newNode.getCost()+ret.getSteps();
@@ -172,7 +173,7 @@ public class RRTDynCar : MonoBehaviour {
 	}
 
 	int run = 0;
-	private RRTKinCarSteerRet steer(Vector3 start,Vector3 end, Quaternion startRot, Quaternion endRot){
+	private RRTDynCarSteerRet steer(Vector3 start,Vector3 end, Quaternion startRot, Quaternion endRot, float startVel){
 		float r1 = minRadius, r2 = minRadius;
 		DubinRet S = dubin.MinTrajectory (start, end, startRot, endRot, r1, r2);
 		run++;
@@ -187,7 +188,7 @@ public class RRTDynCar : MonoBehaviour {
 
 		float velX = 0;
 		float velY = 0;
-		float dynVel = 0;
+		float dynVel = startVel;
 		
 		Vector3 curPos = start;
 		Vector3 goalPos = end;
@@ -205,8 +206,8 @@ public class RRTDynCar : MonoBehaviour {
 					index++;
 					
 					if(index >= path.Count){
-						return new RRTKinCarSteerRet(S.cost, curRot);
-						//return new RRTKinCarSteerRet(nrSteps, curRot);
+						return new RRTDynCarSteerRet(S.cost, curRot, dynVel);
+						//return new RRTDynCarSteerRet(nrSteps, curRot);
 					}
 					
 					followS = true;
@@ -235,12 +236,12 @@ public class RRTDynCar : MonoBehaviour {
 			float distToTarget = Vector3.Distance (current, curPos);
 			float neededDistToStop = (Mathf.Pow (dynVel, 2) / 2 * (dynF / dynMass));
 			
-			if(distToTarget > neededDistToStop) {
+			//if(distToTarget > neededDistToStop) {
 				dynVel = dynVel + (dynF / dynMass);
-			}
-			else {
-				dynVel = dynVel - (dynF / dynMass);
-			}
+			//}
+			//else {
+			//	dynVel = dynVel - (dynF / dynMass);
+			//}
 
 			if(dynVel < 0)
 				dynVel = 0;
@@ -279,7 +280,7 @@ public class RRTDynCar : MonoBehaviour {
 		
 		while (!valid) {
 			
-			RRTKinCarNode nearest=this.closestPoint(curRand);
+			RRTDynCarNode nearest=this.closestPoint(curRand);
 			if(this.checkIntersection(nearest.position,curRand)){
 				valid=true;
 			}
@@ -294,10 +295,10 @@ public class RRTDynCar : MonoBehaviour {
 		
 	}
 	
-	private RRTKinCarNode closestPoint(Vector3 newPoint){
+	private RRTDynCarNode closestPoint(Vector3 newPoint){
 		
 		float curLowest = float.PositiveInfinity;
-		RRTKinCarNode curNearest = null;
+		RRTDynCarNode curNearest = null;
 		
 		for (int i=0; i<points.Count; i++) {
 			
@@ -311,9 +312,9 @@ public class RRTDynCar : MonoBehaviour {
 	}
 	
 	//To get the list of near points needed in RRT*
-	private List<RRTKinCarNode> getNearPoints(RRTKinCarNode newNode){
+	private List<RRTDynCarNode> getNearPoints(RRTDynCarNode newNode){
 		
-		List<RRTKinCarNode> nearNodes = new List<RRTKinCarNode> ();
+		List<RRTDynCarNode> nearNodes = new List<RRTDynCarNode> ();
 		
 		for (int i=0; i<points.Count; i++) {
 			
@@ -345,10 +346,10 @@ public class RRTDynCar : MonoBehaviour {
 	
 	private List<Vector3> findPath(Vector3 endPoint){
 		
-		RRTKinCarNode goalNode = null;
+		RRTDynCarNode goalNode = null;
 		List<Vector3> path = new List<Vector3> ();
 		
-		foreach (RRTKinCarNode node in points) {
+		foreach (RRTDynCarNode node in points) {
 			
 			float distToGoal = Vector3.Distance (node.position, endPoint);
 			
@@ -364,7 +365,7 @@ public class RRTDynCar : MonoBehaviour {
 			return null;
 		}
 		
-		RRTKinCarNode curNode = goalNode;
+		RRTDynCarNode curNode = goalNode;
 		
 		while (curNode.parent!=null) {
 			
@@ -440,12 +441,14 @@ public class RRTDynCar : MonoBehaviour {
 			float neededDistToStop = (Mathf.Pow (dynVel, 2) / 2 * (dynF / dynMass));
 
 			print (dynVel);
-			if(distToTarget > neededDistToStop) {
-				dynVel = dynVel + (dynF / dynMass);
-			}
-			else{
-				dynVel = dynVel - (dynF / dynMass);
-			}
+			//if(distToTarget > neededDistToStop) {
+				dynVel = dynVel + accMax;
+			//}
+			//else{
+			//	dynVel = dynVel - (dynF / dynMass);
+			//}
+
+
 
 			if(dynVel < 0)
 				dynVel = 0;
