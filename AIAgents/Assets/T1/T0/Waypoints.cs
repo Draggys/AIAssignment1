@@ -164,8 +164,25 @@ public class Waypoints : MonoBehaviour {
 				//Debug.Log("accMax:"+accMax);
 				//Debug.Log ("DynVel:"+dynPVel);
 
-				dynPVel.x=dynPVel.x+accMax*change.x*Time.deltaTime;
-				dynPVel.z=dynPVel.z+accMax*change.z*Time.deltaTime;
+
+				float accInX=change.x/(Mathf.Abs(change.x)+Mathf.Abs(change.z));
+				float accInZ=change.z/(Mathf.Abs(change.x)+Mathf.Abs(change.z));
+
+				if(float.IsNaN(accInX)){
+					accInX=0;
+				}
+				if(float.IsNaN(accInZ)){
+					accInZ=0;
+				}
+
+				dynPVel.x=dynPVel.x+accMax*accInX*Time.deltaTime;
+				dynPVel.z=dynPVel.z+accMax*accInZ*Time.deltaTime;
+
+				Debug.Log("accInX="+accInX);
+				Debug.Log("accInZ="+accInZ);
+
+				//dynPVel.x=dynPVel.x+accMax*change.x*Time.deltaTime;
+				//dynPVel.z=dynPVel.z+accMax*change.z*Time.deltaTime;
 			
 				transform.position=transform.position+dynPVel;
 

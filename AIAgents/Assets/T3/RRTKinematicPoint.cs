@@ -238,7 +238,7 @@ public class RRTKinematicPoint : MonoBehaviour{
 				current = path[index];
 				//Debug.Log("Current:"+current);
 			}
-			transform.position = Vector3.MoveTowards (transform.position, current, velocity );
+			transform.position = Vector3.MoveTowards (transform.position, current, velocity*Time.deltaTime );
 			yield return null;
 		}
 	}

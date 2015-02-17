@@ -364,11 +364,11 @@ public class RRTDiffDrive : MonoBehaviour{
 			float stepsToDist=distance/(vMax);
 			
 			if(stepsToRightAngle>stepsToDist){
-				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, wMaxDegrees);
+				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, wMaxDegrees*Time.deltaTime);
 			}
 			else{
 				
-				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, wMaxDegrees);
+				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, wMaxDegrees*Time.deltaTime);
 
 				
 				if(diffAngle<90){
@@ -378,7 +378,7 @@ public class RRTDiffDrive : MonoBehaviour{
 
 					lookDir.x = lookDir.x * (  vMax );
 					lookDir.z = lookDir.z * ( vMax );
-					transform.position = (transform.position + lookDir);
+					transform.position = (transform.position + lookDir*Time.deltaTime);
 				}
 
 				
