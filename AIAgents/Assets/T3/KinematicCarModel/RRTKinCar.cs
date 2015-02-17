@@ -24,7 +24,7 @@ public class RRTKinCar : MonoBehaviour {
 	List<Vector3> path = null;
 	List<RRTKinCarNode> points;
 
-	private PolyMapLoader map;
+	private PolyMapLoader map = null;
 
 	bool isRunning = false;
 
@@ -33,6 +33,9 @@ public class RRTKinCar : MonoBehaviour {
 		dubin = gameObject.AddComponent<Dubin> ();
 		
 		map = new PolyMapLoader ("x", "y", "goalPos", "startPos", "button");
+		//map = new PolyMapLoader ("x2", "y2", "goalPos2", "startPos2", "button2");
+		transform.position = map.polyData.start;
+
 		points = new List<RRTKinCarNode> ();
 		RRTKinCarNode startNode = new RRTKinCarNode (map.polyData.start);
 		startNode.direction = transform.rotation;
@@ -364,7 +367,28 @@ public class RRTKinCar : MonoBehaviour {
 	}
 
 	void OnDrawGizmos() {
-        
+		if (map != null) {
+			
+			if (map.polyData.nodes != null) {
+				foreach(Vector3 node in map.polyData.nodes) {
+					Gizmos.color = Color.blue;
+					Gizmos.DrawCube (node, Vector3.one);
+				}
+				
+				foreach(Line line in map.polyData.lines){
+					Gizmos.color=Color.black;
+					
+					Gizmos.DrawLine(line.point1,line.point2);
+				}
+				
+			}
+			Gizmos.color = Color.green;
+			Gizmos.DrawCube (map.polyData.start, new Vector3(2,1,2));
+			
+			Gizmos.color = Color.red;
+			Gizmos.DrawCube (map.polyData.end, new Vector3(2,1,2));
+			
+		}
 		if (moving) {
 			Gizmos.color = Color.black;
 			if (dubin.proxCircles != null) {

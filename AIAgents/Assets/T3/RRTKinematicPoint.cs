@@ -16,7 +16,7 @@ public class RRTKinematicPoint : MonoBehaviour{
 
 	public float velocity;
 
-	private PolyMapLoader map;
+	private PolyMapLoader map = null;
 
 
 	private List<Vector3> path = null;
@@ -24,6 +24,8 @@ public class RRTKinematicPoint : MonoBehaviour{
 	void Start(){
 
 		map = new PolyMapLoader ("x", "y", "goalPos", "startPos", "button");
+		//map = new PolyMapLoader ("x2", "y2", "goalPos2", "startPos2", "button2");
+		transform.position = map.polyData.start;
 
 		points = new List<RRTKinematicNode> ();
 		points.Add (new RRTKinematicNode (map.polyData.start));
@@ -246,34 +248,28 @@ public class RRTKinematicPoint : MonoBehaviour{
 
 
 	void OnDrawGizmos() {
-		
-		map = new PolyMapLoader ("x", "y", "goalPos", "startPos", "button");
-		
-		if (map.polyData.nodes != null) {
-			foreach(Vector3 node in map.polyData.nodes) {
-				Gizmos.color = Color.blue;
-				Gizmos.DrawCube (node, Vector3.one);
-			}
+		if (map != null) {
 			
-			foreach(Line line in map.polyData.lines){
-				Gizmos.color=Color.black;
+			if (map.polyData.nodes != null) {
+				foreach(Vector3 node in map.polyData.nodes) {
+					Gizmos.color = Color.blue;
+					Gizmos.DrawCube (node, Vector3.one);
+				}
 				
-				Gizmos.DrawLine(line.point1,line.point2);
+				foreach(Line line in map.polyData.lines){
+					Gizmos.color=Color.black;
+					
+					Gizmos.DrawLine(line.point1,line.point2);
+				}
+				
 			}
+			Gizmos.color = Color.green;
+			Gizmos.DrawCube (map.polyData.start, new Vector3(2,1,2));
+			
+			Gizmos.color = Color.red;
+			Gizmos.DrawCube (map.polyData.end, new Vector3(2,1,2));
 			
 		}
-		Gizmos.color = Color.green;
-		Gizmos.DrawCube (map.polyData.start, new Vector3(2,1,2));
-		
-		Gizmos.color = Color.red;
-		Gizmos.DrawCube (map.polyData.end, new Vector3(2,1,2));
-		
-		Gizmos.color = Color.black;
-		Gizmos.DrawLine (new Vector3 (0, 1, 0), new Vector3 (100, 1, 0));
-		Gizmos.DrawLine (new Vector3 (100, 1, 0),new Vector3(100,1,90));
-		Gizmos.DrawLine (new Vector3(100,1,90), new Vector3 (0, 1, 90));
-		Gizmos.DrawLine (new Vector3(0,1,90), new Vector3 (0, 1, 0));
-		
 	}
 
 
