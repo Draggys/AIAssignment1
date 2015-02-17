@@ -443,13 +443,17 @@ public class RRTKinCar : MonoBehaviour {
 		bool followS = true;
 		int q = 2;
 		bool carMadeIt = false;
+		float timeBefore = Time.time;
 		while (true) {
 			if(carMadeIt) {
 				if(Vector3.Distance (transform.position, path[index]) < goalInterval){
 					index++;
 					
-					if(index >= path.Count)
+					if(index >= path.Count){
+						float timeAfter=Time.time;
+						Debug.Log("Time:"+(timeAfter-timeBefore));
 						yield break;
+					}
 					
 					followS = true;
 					

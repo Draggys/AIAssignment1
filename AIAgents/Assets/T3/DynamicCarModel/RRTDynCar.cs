@@ -395,24 +395,27 @@ public class RRTDynCar : MonoBehaviour {
 		float dynVel = 0;
 		moving = true;
 		current = path [index];
-
+		
 		DubinRet S = dubin.MinTrajectory (transform.position, current, transform.rotation, transform.rotation,
-		                               minRadius, minRadius);
+		                                  minRadius, minRadius);
 		ds = new Line (S.waypoints [0], S.waypoints [1]);
-
+		
 		bool followS = true;
 		int q = 2;
 		bool carMadeIt = false;
+		float timeBefore = Time.time;
 		while (true) {
 			if(carMadeIt) {
 				if(Vector3.Distance (transform.position, path[index]) < goalInterval) {
 					index++;
-
+					
 					if(index >= path.Count) {
 						moving = false;
+						float timeAfter=Time.time;
+						Debug.Log("Time:"+(timeAfter-timeBefore));
 						yield break;
 					}
-
+					
 					followS = true;
 					current = path[index];
 					S = dubin.MinTrajectory(transform.position, current, transform.rotation,
@@ -437,26 +440,38 @@ public class RRTDynCar : MonoBehaviour {
 				}
 			}
 
+			if(index==path.Count-1){
+
 			float distToTarget = Vector3.Distance (current, transform.position);
 			float neededDistToStop = (Mathf.Pow (dynVel, 2) / 2 * (dynF / dynMass));
-
-			print (dynVel);
-			//if(distToTarget > neededDistToStop) {
+			
+				//print (dynVel);
+				if(distToTarget > neededDistToStop) {
 				dynVel = dynVel + accMax;
+				}
+				else{
+					dynVel = dynVel - accMax;
+				}
+
+			}
+			else{
+			//print (dynVel);
+			//if(distToTarget > neededDistToStop) {
+			dynVel = dynVel + accMax;
 			//}
 			//else{
 			//	dynVel = dynVel - (dynF / dynMass);
 			//}
-
-
-
+			}
+			
+			
 			if(dynVel < 0)
 				dynVel = 0;
-
+			
 			float wheelAngleRad = maxWheelAngle * (Mathf.PI / 180);
 			float dTheta=(dynVel/carLength)*Mathf.Tan(wheelAngleRad);
 			Quaternion theta = Quaternion.LookRotation (current - transform.position);
-
+			
 			if(transform.rotation!=theta){
 				transform.rotation = Quaternion.RotateTowards (transform.rotation, theta, dTheta);
 			}
@@ -467,12 +482,12 @@ public class RRTDynCar : MonoBehaviour {
 			newPos.x=newPos.x+(dynVel*Mathf.Sin(angleRad)*Time.deltaTime);
 			newPos.z=newPos.z+(dynVel*Mathf.Cos(angleRad)*Time.deltaTime);
 			transform.position=newPos;
-
+			
 			//If the car is "almost" at the point
 			if(Vector3.Distance (current, transform.position) < goalInterval){
 				carMadeIt = true;
 			}
-
+			
 			yield return null;
 		}
 	}
