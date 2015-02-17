@@ -64,14 +64,20 @@ public class Dubin : MonoBehaviour {
 	//	print ("csc cost " + csc.cost);
 	//	print ("ccc cost " + ccc.cost);
 
-		if (float.IsNaN (ccc.cost) || csc.cost < ccc.cost) {
-	//		print ("CSC");
-			return new DubinRet(csc.tangent.point1, csc.tangent.point2, csc.cost);
-		} 
-		else {
-	//		print ("CCC");
-			return new DubinRet(ccc.arcPos[0], ccc.arcPos[1], ccc.cost);
+		if (csc == null && ccc == null)
+			return null;
+
+		if (csc != null) {
+			if (float.IsNaN (ccc.cost) || csc.cost < ccc.cost) {
+				//		print ("CSC");
+				return new DubinRet (csc.tangent.point1, csc.tangent.point2, csc.cost);
+			} else {
+				//		print ("CCC");
+				return new DubinRet (ccc.arcPos [0], ccc.arcPos [1], ccc.cost);
+			}
 		}
+
+		return null;
 
 		/*
         Line SI = CSCMinTrajectoryInner(start, goal, startAngle, goalAngle, r1, r2);
@@ -172,6 +178,9 @@ public class Dubin : MonoBehaviour {
 				bestCost = CSC[i].cost;
 			}
 		}
+
+		if (CSC.Count == 0)
+			return null;
 
 		return CSC [best];
 	}
